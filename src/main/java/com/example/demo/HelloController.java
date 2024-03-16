@@ -6,8 +6,7 @@ import java.util.Optional;
 public class HelloController {
 
     @GetMapping
-    public int calc(@RequestParam(value = "a", defaultValue = "0") Integer a,
-                    @RequestParam(value = "b", defaultValue = "0") Integer b) {
+    public int calc(@RequestParam(value = "a") Integer a, @RequestParam(value = "b") Integer b) {
         return a + b;
     }
 }
