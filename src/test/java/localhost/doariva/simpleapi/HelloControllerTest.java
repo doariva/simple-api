@@ -33,4 +33,11 @@ public class HelloControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().string("3"));
     }
+
+    @Test
+    public void add_with_invalid_input() throws Exception {
+        mockMvc = MockMvcBuilders.standaloneSetup(helloController).build();
+        mockMvc.perform(MockMvcRequestBuilders.get("/add").param("a", "1").param("b", "invalid"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
 }
