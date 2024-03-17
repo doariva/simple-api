@@ -23,4 +23,12 @@ public class HelloControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().string("Hello!"));
     }
+
+    @Test
+    public void add() throws Exception {
+        mockMvc = MockMvcBuilders.standaloneSetup(helloController).build();
+        mockMvc.perform(MockMvcRequestBuilders.get("/add?a=1&b=2"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().string("3"));
+    }
 }
