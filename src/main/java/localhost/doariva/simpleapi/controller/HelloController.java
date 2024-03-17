@@ -17,8 +17,8 @@ public class HelloController {
         return "Hello!";
     }
 
-    @GetMapping("/calc")
-    public int calc(@RequestParam("a") int a, @RequestParam("b") int b) {
+    @GetMapping("/add")
+    public int add(@RequestParam("a") int a, @RequestParam("b") int b) {
         return a + b;
     }
 }
