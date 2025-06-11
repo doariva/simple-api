@@ -21,4 +21,9 @@ public class HelloController {
     public int add(@RequestParam("a") int a, @RequestParam("b") int b) {
         return a + b;
     }
+
+    @GetMapping("/sub")
+    public int subtract(@RequestParam("a") int a, @RequestParam("b") int b) {
+        return a - b;
+    }
 }
