@@ -1,14 +1,23 @@
 package localhost.doariva.simpleapi.controller;
 
+import localhost.doariva.simpleapi.service.HelloService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * simple-apiのコントローラー
  */
 @RestController
 public class HelloController {
+
+    private final HelloService helloService;
+
+    @Autowired
+    public HelloController(HelloService helloService) {
+        this.helloService = helloService;
+    }
 
     /**
      * Hello API
@@ -17,7 +26,7 @@ public class HelloController {
      */
     @GetMapping("/hello")
     public String hello() {
-        return "Hello!";
+        return helloService.hello();
     }
 
     /**
@@ -29,7 +38,7 @@ public class HelloController {
      */
     @GetMapping("/add")
     public int add(@RequestParam("a") int a, @RequestParam("b") int b) {
-        return a + b;
+        return helloService.add(a, b);
     }
 
     /**
@@ -41,6 +50,6 @@ public class HelloController {
      */
     @GetMapping("/multiply")
     public int multiply(@RequestParam("a") int a, @RequestParam("b") int b) {
-        return a * b;
+        return helloService.multiply(a, b);
     }
 }
