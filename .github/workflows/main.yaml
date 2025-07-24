@@ -1,0 +1,141 @@
+name: deploy-app
+
+on:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - ".github/workflows/docs.yaml"
+      - ".k8s/docs-k8s.yaml"
+      - "docs/**"
+
+  workflow_dispatch:
+
+env:
+  NAMESPACE: prod
+  REPO: simple-api
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    outputs:
+      GRADLE_SCAN_URL: ${{ steps.build_gradle.outputs.GRADLE_SCAN_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ap-osaka-1.ocir.io
+          username: ${{ secrets.CONTAINER_REGISTRY_ID }}
+          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build with Gradle
+        id: build_gradle
+        run: |
+          # add GradleScan properties
+          cat <<EOF >> build.gradle
+
+          develocity {
+            buildScan {
+              termsOfUseUrl = "https://gradle.com/terms-of-service"
+              termsOfUseAgree = "yes"
+            }
+          }
+          EOF
+
+          ./gradlew build --configure-on-demand --parallel --scan | tee build.log
+          GRADLE_SCAN_URL=$(grep -Eo 'https://gradle.com/s/[a-zA-Z0-9]+' build.log | head -n 1 || echo 'Not Found')
+          echo "GRADLE_SCAN_URL=$GRADLE_SCAN_URL" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          file: Dockerfile
+          push: true
+          platforms: linux/arm64,linux/amd64
+          tags: ap-osaka-1.ocir.io/axopk4dsgaw5/${{ env.REPO }}:prod,ap-osaka-1.ocir.io/axopk4dsgaw5/${{ env.REPO }}:${{ github.sha }}
+          context: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: azure/setup-kubectl@v4
+        id: install
+
+      - name: Deploy to Kubernetes
+        run: |
+          echo "${{ secrets.BASE64_KUBECONFIG }}" | base64 -d > kubeconfig
+          kubectl --kubeconfig kubeconfig apply -f .k8s/
+          kubectl --kubeconfig kubeconfig -n ${{ env.NAMESPACE }} set image deployment/${{ env.REPO }} ${{ env.REPO }}=ap-osaka-1.ocir.io/axopk4dsgaw5/${{ env.REPO }}:${{ github.sha }}
+          kubectl --kubeconfig kubeconfig -n ${{ env.NAMESPACE }} rollout status deployment/simple-api
+
+  notify:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set JOB URL
+        run: echo "JOB_URL=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" >> $GITHUB_ENV
+      - name: test env
+        run: echo "GRADLE_SCAN_URL=thisistestenv" >> $GITHUB_ENV
+      - name: Notify to Discord
+        env:
+          GRADLE_SCAN_URL: ${{needs.build.outputs.GRADLE_SCAN_URL}}
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [
+                {
+                  \"title\": \"Application ${{ env.REPO }} deploy has completed successfully.\",
+                  \"color\": 3581519,
+                  \"fields\": [
+                    {
+                      \"name\": \"Branch\",
+                      \"value\": \"${{ github.ref_name }}\",
+                      \"inline\": true
+                    },
+                    {
+                      \"name\": \"Commit Hash\",
+                      \"value\": \"[${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})\",
+                      \"inline\": true
+                    },
+                    {
+                      \"name\": \"Job\",
+                      \"value\": \"${{ env.JOB_URL }}\",
+                      \"inline\": false
+                    },
+                    {
+                      \"name\": \"Endpoint\",
+                      \"value\": \"https://api.doariva.net/simple-api\",
+                      \"inline\": false
+                    },
+                    {
+                      \"name\": \"Gradle Build Report\",
+                      \"value\": \"$GRADLE_SCAN_URL\",
+                      \"inline\": false
+                    }
+                  ]
+                }
+              ]
+            }" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
