@@ -49,4 +49,13 @@ public class HelloControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("15"));
     }
+
+    @Test
+    @DisplayName("subtractエンドポイントが正しい差を返すこと")
+    void subtractReturnsDifference() throws Exception {
+        when(helloService.subtract(5, 3)).thenReturn(2);
+        mockMvc.perform(get("/subtract").param("a", "5").param("b", "3"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("2"));
+    }
 }

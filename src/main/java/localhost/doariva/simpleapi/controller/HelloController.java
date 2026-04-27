@@ -52,4 +52,16 @@ public class HelloController {
     public int multiply(@RequestParam("a") int a, @RequestParam("b") int b) {
         return helloService.multiply(a, b);
     }
+
+    /**
+     * Subtract API
+     *
+     * @param a a
+     * @param b b
+     * @return a - b
+     */
+    @GetMapping("/subtract")
+    public int subtract(@RequestParam("a") int a, @RequestParam("b") int b) {
+        return helloService.subtract(a, b);
+    }
 }
