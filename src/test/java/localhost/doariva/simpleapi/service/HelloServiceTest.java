@@ -36,6 +36,15 @@ public class HelloServiceTest {
         assertEquals(6, helloService.multiply(2, 3));
         assertEquals(-6, helloService.multiply(2, -3));
         assertEquals(0, helloService.multiply(0, 5));
-        assertEquals(0, helloService.multiply(5, 0));
+        assertEquals(5, helloService.multiply(5, 1));
+    }
+
+    @Test
+    @DisplayName("subtractメソッドが正しい差を返すこと")
+    void subtractReturnsCorrectDifference() {
+        assertEquals(2, helloService.subtract(5, 3));
+        assertEquals(8, helloService.subtract(5, -3));
+        assertEquals(-2, helloService.subtract(3, 5));
+        assertEquals(0, helloService.subtract(5, 5));
     }
 }

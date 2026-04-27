@@ -39,4 +39,15 @@ public class HelloService {
     public int multiply(int a, int b) {
         return a * b;
     }
+
+    /**
+     * 2つの整数を減算します。
+     *
+     * @param a 減算される最初の整数
+     * @param b 減算される2番目の整数
+     * @return a と b の差
+     */
+    public int subtract(int a, int b) {
+        return a - b;
+    }
 }
